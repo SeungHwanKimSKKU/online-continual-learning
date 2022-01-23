@@ -17,6 +17,13 @@ class ASER_retrieve(object):
         self.out_dim = n_classes[params.data]
         self.is_aser_upt = params.update == "ASER"
         ClassBalancedRandomSampling.class_index_cache = None
+        self.transform = nn.Sequential(
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            RandomGrayscale(p=0.2)
+
+        )
 
     def retrieve(self, buffer, **kwargs):
         model = buffer.model
@@ -47,6 +54,8 @@ class ASER_retrieve(object):
         """
         cur_x = maybe_cuda(cur_x)
         cur_y = maybe_cuda(cur_y)
+        cur_x = self.transform(cur_x)
+        cur_y = self.transform(cur_y)
 
         # Reset and update ClassBalancedRandomSampling cache if ASER update is not enabled
         if not self.is_aser_upt:
@@ -89,4 +98,5 @@ class ASER_retrieve(object):
 
         ret_x = cand_x[ret_ind][:num_retrieve]
         ret_y = cand_y[ret_ind][:num_retrieve]
+
         return ret_x, ret_y

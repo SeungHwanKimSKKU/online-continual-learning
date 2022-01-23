@@ -5,8 +5,9 @@ from torch.utils import data
 from utils.buffer.buffer import Buffer
 from utils.utils import maybe_cuda, AverageMeter
 import torch
-
-
+from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
+import torch.nn as nn
+from utils.setup_elements import transforms_match, input_size_match
 class AGEM(ContinualLearner):
     def __init__(self, model, opt, params):
         super(AGEM, self).__init__(model, opt, params)
@@ -14,6 +15,13 @@ class AGEM(ContinualLearner):
         self.mem_size = params.mem_size
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
+        self.transform = nn.Sequential(
+            #RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            #RandomGrayscale(p=0.2)
+
+        )
 
     def train_learner(self, x_train, y_train):
         self.before_train(x_train, y_train)
@@ -35,9 +43,17 @@ class AGEM(ContinualLearner):
                 batch_x, batch_y = batch_data
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
+                ############################
+                batch_x = batch_x.type(torch.cuda.FloatTensor)
+                #batch_y = batch_y.type(torch.float64)
+                batch_x=self.transform(batch_x)
+                #batch_y=self.transform(batch_y)
+                batch_x = maybe_cuda(batch_x, self.cuda)
+                #batch_y = maybe_cuda(batch_y, self.cuda)
                 for j in range(self.mem_iters):
-                    logits = self.forward(batch_x)
-                    loss = self.criterion(logits, batch_y)
+                    #batch_x = batch_x.type(torch.double)
+                    logits = self.forward(batch_x.cuda())
+                    loss = self.criterion(logits, batch_y.cuda())
                     if self.params.trick['kd_trick']:
                         loss = 1 / (self.task_seen + 1) * loss + (1 - 1 / (self.task_seen + 1)) * \
                                     self.kd_manager.get_kd_loss(logits, batch_x)
