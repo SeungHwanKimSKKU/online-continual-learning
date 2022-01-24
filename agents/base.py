@@ -9,8 +9,10 @@ from torch.utils.data import TensorDataset, DataLoader
 import copy
 from utils.loss import SupConLoss
 import pickle
-
-
+import torch.nn as nn
+from utils.setup_elements import transforms_match, input_size_match
+from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
+import torch.nn as nn
 class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     '''
     Abstract module which is inherited by each and every continual learning algorithm.
@@ -39,6 +41,14 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         self.bias_norm_old = []
         self.lbl_inv_map = {}
         self.class_task_map = {}
+        self.transform = nn.Sequential(
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            RandomGrayscale(p=0.2)
+
+        )
+        
 
     def before_train(self, x_train, y_train):
         new_labels = list(set(y_train.tolist()))
@@ -113,6 +123,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             return ce(logits, labels)
 
     def forward(self, x):
+        #print("forward")
+        x=self.transform(x)
         return self.model.forward(x)
 
     def evaluate(self, test_loaders):
@@ -154,12 +166,15 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             for task, test_loader in enumerate(test_loaders):
                 acc = AverageMeter()
                 for i, (batch_x, batch_y) in enumerate(test_loader):
+                    batch_x=self.transform(batch_x)
+                    #print(len(batch_x.shape))
                     if len(batch_x.shape)==5:
                         batch_x=batch_x.view(batch_x.shape[0],batch_x.shape[2],batch_x.shape[3],batch_x.shape[4])
                     batch_x = maybe_cuda(batch_x, self.cuda)
                     batch_y = maybe_cuda(batch_y, self.cuda)
                     if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
                         feature = self.model.features(batch_x)  # (batch_size, feature_size)
+                        #print("feature.shape",feature.shape)
                         for j in range(feature.size(0)):  # Normalize
                             feature.data[j] = feature.data[j] / feature.data[j].norm()
                         feature = feature.unsqueeze(2)  # (batch_size, feature_size, 1)
@@ -170,10 +185,17 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         means = means.transpose(1, 2)
                         feature = feature.expand_as(means)  # (batch_size, feature_size, n_classes)
                         dists = (feature - means).pow(2).sum(1).squeeze()  # (batch_size, n_classes)
+                        #_, pred_label = dists.min(0)
+                        #print("dists:",dists,dists.min(0),dists.shape)
+                        #dist = dists.squeeze(10,-1)
                         _, pred_label = dists.min(1)
                         # may be faster
                         # feature = feature.squeeze(2).T
                         # _, preds = torch.matmul(means, feature).max(0)
+                        #print(pred_label,np.array(self.old_labels).shape,np.array(self.old_labels))
+                        #print("many",np.array(self.old_labels)[
+                        #                   pred_label.tolist()] )
+                        print("batch_y.cpu().numpy()",batch_y.cpu().numpy())
                         correct_cnt = (np.array(self.old_labels)[
                                            pred_label.tolist()] == batch_y.cpu().numpy()).sum().item() / batch_y.size(0)
                     else:
@@ -227,3 +249,4 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             with open('confusion', 'wb') as fp:
                 pickle.dump([correct_lb, predict_lb], fp)
         return acc_array
+

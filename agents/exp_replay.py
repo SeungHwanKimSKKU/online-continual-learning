@@ -5,8 +5,10 @@ from agents.base import ContinualLearner
 from continuum.data_utils import dataset_transform
 from utils.setup_elements import transforms_match
 from utils.utils import maybe_cuda, AverageMeter
-
-
+import torch.nn as nn
+from utils.setup_elements import transforms_match, input_size_match
+from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
+import torch.nn as nn
 class ExperienceReplay(ContinualLearner):
     def __init__(self, model, opt, params):
         super(ExperienceReplay, self).__init__(model, opt, params)
@@ -14,11 +16,22 @@ class ExperienceReplay(ContinualLearner):
         self.mem_size = params.mem_size
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
+        self.transform = nn.Sequential(
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            RandomGrayscale(p=0.2)
+
+        )
 
     def train_learner(self, x_train, y_train):
         self.before_train(x_train, y_train)
         # set up loader
-        train_dataset = dataset_transform(x_train, y_train, transform=transforms_match[self.data])
+        print(self.data)
+        train_dataset = dataset_transform(x_train, y_train, transforms_match[self.data])
+        #x_train=x_train.type(torch.float64)
+        #y_train=y_train.type(torch.float64)
+        #train_dataset = self.transform(x_train),torch.from_numpy(y_train)
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,
                                        drop_last=True)
         # set up model
@@ -36,9 +49,11 @@ class ExperienceReplay(ContinualLearner):
                 batch_x, batch_y = batch_data
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
+                batch_x = self.transform(batch_x)
                 for j in range(self.mem_iters):
                     if len(batch_x.shape)==5:
-                        batch_x=batch_x.view(batch_x.shape[0],batch_x.shape[2],batch_x.shape[3],batch_x.shape[4])
+                        #print("batch_shape 5")
+                        batch_x = batch_x.view(batch_x.shape[0],batch_x.shape[2],batch_x.shape[3],batch_x.shape[4])
                     logits = self.model.forward(batch_x)
                     loss = self.criterion(logits, batch_y)
                     if self.params.trick['kd_trick']:
@@ -58,7 +73,9 @@ class ExperienceReplay(ContinualLearner):
 
                     # mem update
                     mem_x, mem_y = self.buffer.retrieve(x=batch_x, y=batch_y)
+                    mem_x = self.transform(mem_x)
                     if mem_x.size(0) > 0:
+                        
                         mem_x = maybe_cuda(mem_x, self.cuda)
                         mem_y = maybe_cuda(mem_y, self.cuda)
                         mem_logits = self.model.forward(mem_x)

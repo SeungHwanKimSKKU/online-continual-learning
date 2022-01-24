@@ -16,10 +16,10 @@ class AGEM(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
         self.transform = nn.Sequential(
-            #RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
             RandomHorizontalFlip(),
             ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
-            #RandomGrayscale(p=0.2)
+            RandomGrayscale(p=0.2)
 
         )
 
@@ -40,15 +40,16 @@ class AGEM(ContinualLearner):
         for ep in range(self.epoch):
             for i, batch_data in enumerate(train_loader):
                 # batch update
+                
                 batch_x, batch_y = batch_data
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
                 ############################
-                batch_x = batch_x.type(torch.cuda.FloatTensor)
+                #batch_x = batch_x.type(torch.cuda.FloatTensor)
                 #batch_y = batch_y.type(torch.float64)
                 batch_x=self.transform(batch_x)
                 #batch_y=self.transform(batch_y)
-                batch_x = maybe_cuda(batch_x, self.cuda)
+                #batch_x = maybe_cuda(batch_x, self.cuda)
                 #batch_y = maybe_cuda(batch_y, self.cuda)
                 for j in range(self.mem_iters):
                     #batch_x = batch_x.type(torch.double)
@@ -72,6 +73,7 @@ class AGEM(ContinualLearner):
                     if self.task_seen > 0:
                         # sample from memory of previous tasks
                         mem_x, mem_y = self.buffer.retrieve()
+                        mem_x = self.transform(mem_x)
                         if mem_x.size(0) > 0:
                             params = [p for p in self.model.parameters() if p.requires_grad]
                             # gradient computed using current batch

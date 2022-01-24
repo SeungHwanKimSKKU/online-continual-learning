@@ -4,7 +4,9 @@ from utils.setup_elements import transforms_match
 from torch.utils import data
 from utils.utils import maybe_cuda, AverageMeter
 import torch
-
+from utils.setup_elements import transforms_match, input_size_match
+from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
+import torch.nn as nn
 class EWC_pp(ContinualLearner):
     def __init__(self, model, opt, params):
         super(EWC_pp, self).__init__(model, opt, params)
@@ -16,6 +18,13 @@ class EWC_pp(ContinualLearner):
         self.running_fisher = self.init_fisher()
         self.tmp_fisher = self.init_fisher()
         self.normalized_fisher = self.init_fisher()
+        self.transform = nn.Sequential(
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            RandomGrayscale(p=0.2)
+
+        )
 
     def train_learner(self, x_train, y_train):
         self.before_train(x_train, y_train)
@@ -36,7 +45,7 @@ class EWC_pp(ContinualLearner):
                 batch_x, batch_y = batch_data
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
-
+                batch_x = self.transform(batch_x)
                 # update the running fisher
                 if (ep * len(train_loader) + i + 1) % self.fisher_update_after == 0:
                     self.update_running_fisher()
@@ -104,3 +113,4 @@ class EWC_pp(ContinualLearner):
     def accum_fisher(self):
         for n, p in self.tmp_fisher.items():
             p += self.weights[n].grad ** 2
+
