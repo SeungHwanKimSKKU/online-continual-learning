@@ -9,7 +9,9 @@ from torch.utils.data import TensorDataset, DataLoader
 import copy
 from utils.loss import SupConLoss
 import pickle
-
+from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
+import torch.nn as nn
+from utils.setup_elements import input_size_match
 
 class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     '''
@@ -39,6 +41,13 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         self.bias_norm_old = []
         self.lbl_inv_map = {}
         self.class_task_map = {}
+        self.transform = nn.Sequential(
+            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomHorizontalFlip(),
+            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            RandomGrayscale(p=0.2)
+
+        )
 
     def before_train(self, x_train, y_train):
         new_labels = list(set(y_train.tolist()))

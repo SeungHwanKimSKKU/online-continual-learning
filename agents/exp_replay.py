@@ -34,9 +34,12 @@ class ExperienceReplay(ContinualLearner):
             for i, batch_data in enumerate(train_loader):
                 # batch update
                 batch_x, batch_y = batch_data
+                batch_x_original = maybe_cuda(batch_x, self.cuda)
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
                 for j in range(self.mem_iters):
+                    if self.params.aug:
+                        batch_x = self.transform(batch_x)
                     logits = self.model.forward(batch_x)
                     loss = self.criterion(logits, batch_y)
                     if self.params.trick['kd_trick']:
@@ -55,10 +58,12 @@ class ExperienceReplay(ContinualLearner):
                     loss.backward()
 
                     # mem update
-                    mem_x, mem_y = self.buffer.retrieve(x=batch_x, y=batch_y)
+                    mem_x, mem_y = self.buffer.retrieve(x=batch_x_original, y=batch_y)
                     if mem_x.size(0) > 0:
                         mem_x = maybe_cuda(mem_x, self.cuda)
                         mem_y = maybe_cuda(mem_y, self.cuda)
+                        if self.params.aug:
+                            mem_x = self.transform(mem_x)
                         mem_logits = self.model.forward(mem_x)
                         loss_mem = self.criterion(mem_logits, mem_y)
                         if self.params.trick['kd_trick']:
@@ -89,7 +94,7 @@ class ExperienceReplay(ContinualLearner):
                         self.opt.step()
 
                 # update mem
-                self.buffer.update(batch_x, batch_y)
+                self.buffer.update(batch_x_original, batch_y)
 
                 if i % 100 == 1 and self.verbose:
                     print(

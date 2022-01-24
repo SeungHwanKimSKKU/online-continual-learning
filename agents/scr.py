@@ -5,8 +5,7 @@ from agents.base import ContinualLearner
 from continuum.data_utils import dataset_transform
 from utils.setup_elements import transforms_match, input_size_match
 from utils.utils import maybe_cuda, AverageMeter
-from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
-import torch.nn as nn
+
 
 class SupContrastReplay(ContinualLearner):
     def __init__(self, model, opt, params):
@@ -15,13 +14,7 @@ class SupContrastReplay(ContinualLearner):
         self.mem_size = params.mem_size
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
-        self.transform = nn.Sequential(
-            RandomResizedCrop(size=(input_size_match[self.params.data][1], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
-            RandomHorizontalFlip(),
-            ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
-            RandomGrayscale(p=0.2)
 
-        )
 
     def train_learner(self, x_train, y_train):
         self.before_train(x_train, y_train)

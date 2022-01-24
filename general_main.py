@@ -55,6 +55,8 @@ if __name__ == "__main__":
     parser.add_argument('--retrieve', dest='retrieve', default='random', choices=['MIR', 'random', 'ASER', 'match', 'mem_match'],
                         help='Retrieve method  (default: %(default)s)')
 
+    parser.add_argument('--aug', type=boolean_string, default=False,
+                        help='Whether using data augmentation during training  (default: %(default)s)')
     ########################Optimizer#########################
     parser.add_argument('--optimizer', dest='optimizer', default='SGD', choices=['SGD', 'Adam'],
                         help='Optimizer (default: %(default)s)')
