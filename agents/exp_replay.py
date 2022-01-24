@@ -37,6 +37,8 @@ class ExperienceReplay(ContinualLearner):
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
                 for j in range(self.mem_iters):
+                    if len(batch_x.shape)==5:
+                        batch_x=batch_x.view(batch_x.shape[0],batch_x.shape[2],batch_x.shape[3],batch_x.shape[4])
                     logits = self.model.forward(batch_x)
                     loss = self.criterion(logits, batch_y)
                     if self.params.trick['kd_trick']:

@@ -154,6 +154,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             for task, test_loader in enumerate(test_loaders):
                 acc = AverageMeter()
                 for i, (batch_x, batch_y) in enumerate(test_loader):
+                    if len(batch_x.shape)==5:
+                        batch_x=batch_x.view(batch_x.shape[0],batch_x.shape[2],batch_x.shape[3],batch_x.shape[4])
                     batch_x = maybe_cuda(batch_x, self.cuda)
                     batch_y = maybe_cuda(batch_y, self.cuda)
                     if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:

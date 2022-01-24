@@ -29,17 +29,44 @@ n_classes = {
 transforms_match = {
     'core50': transforms.Compose([
         transforms.ToTensor(),
+        RandomHorizontalFlip(),
+        ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+        #RandomHorizontalFlip(),
+    #    RandomGrayscale(p=0.2)
+    #    ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
         ]),
     'cifar100': transforms.Compose([
         transforms.ToTensor(),
+        RandomHorizontalFlip(),
+        ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+        #RandomHorizontalFlip(),
+    #    ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+    #    RandomGrayscale(p=0.2)
         ]),
     'cifar10': transforms.Compose([
         transforms.ToTensor(),
+        RandomHorizontalFlip(),
+        ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+        #RandomHorizontalFlip(),
+    #    ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+    #    RandomGrayscale(p=0.2)
         ]),
     'mini_imagenet': transforms.Compose([
-        transforms.ToTensor()]),
+        transforms.ToTensor(),
+        RandomHorizontalFlip(),
+        ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+        #RandomHorizontalFlip(),
+    #    ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+    #    RandomGrayscale(p=0.2)
+    ]),
     'openloris': transforms.Compose([
-            transforms.ToTensor()])
+            transforms.ToTensor(),
+        RandomHorizontalFlip(),
+        ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+            #RandomHorizontalFlip(),
+    #    ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
+    #        RandomGrayscale(p=0.2)
+    ])
 }
 
 
