@@ -36,10 +36,10 @@ class ExperienceReplay(ContinualLearner):
                 batch_x, batch_y = batch_data
                 batch_x_original = maybe_cuda(batch_x, self.cuda)
                 batch_x = maybe_cuda(batch_x, self.cuda)
-                batch_y = maybe_cuda(batch_y, self.cuda)
+                batch_y = torch.cat((maybe_cuda(batch_y, self.cuda), maybe_cuda(batch_y, self.cuda)))
                 for j in range(self.mem_iters):
                     if self.params.aug:
-                        batch_x = self.transform(batch_x)
+                        batch_x = torch.cat((self.transform(batch_x), batch_x))
                     logits = self.model.forward(batch_x)
                     loss = self.criterion(logits, batch_y)
                     if self.params.trick['kd_trick']:
@@ -61,9 +61,9 @@ class ExperienceReplay(ContinualLearner):
                     mem_x, mem_y = self.buffer.retrieve(x=batch_x_original, y=batch_y)
                     if mem_x.size(0) > 0:
                         mem_x = maybe_cuda(mem_x, self.cuda)
-                        mem_y = maybe_cuda(mem_y, self.cuda)
+                        mem_y = torch.cat((maybe_cuda(mem_y, self.cuda), maybe_cuda(mem_y, self.cuda)))
                         if self.params.aug:
-                            mem_x = self.transform(mem_x)
+                            mem_x = torch.cat((self.transform(mem_x), mem_x))
                         mem_logits = self.model.forward(mem_x)
                         loss_mem = self.criterion(mem_logits, mem_y)
                         if self.params.trick['kd_trick']:
@@ -81,13 +81,14 @@ class ExperienceReplay(ContinualLearner):
 
                         loss_mem.backward()
 
-                    if self.params.update == 'ASER' or self.params.retrieve == 'ASER':
+                    if self.params.update == 'ASER' or self.params.retrieve == 'ASER' or self.params.combine_mem_training:
                         # opt update
                         self.opt.zero_grad()
                         combined_batch = torch.cat((mem_x, batch_x))
                         combined_labels = torch.cat((mem_y, batch_y))
+                        combined_labels = torch.cat((maybe_cuda(combined_labels, self.cuda), maybe_cuda(combined_labels, self.cuda)))
                         if self.params.aug:
-                            combined_batch = self.transform(combined_batch)
+                            combined_batch = torch.cat((self.transform(combined_batch), combined_batch))
                         combined_logits = self.model.forward(combined_batch)
                         loss_combined = self.criterion(combined_logits, combined_labels)
                         loss_combined.backward()

@@ -57,6 +57,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--aug', type=boolean_string, default=False,
                         help='Whether using data augmentation during training  (default: %(default)s)')
+    parser.add_argument('--combine_mem_training', type=boolean_string, default=False,
+                        help='Whether combining memory batch into one forward pass (default: %(default)s)')
     ########################Optimizer#########################
     parser.add_argument('--optimizer', dest='optimizer', default='SGD', choices=['SGD', 'Adam'],
                         help='Optimizer (default: %(default)s)')
