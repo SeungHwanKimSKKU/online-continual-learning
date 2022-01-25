@@ -86,6 +86,8 @@ class ExperienceReplay(ContinualLearner):
                         self.opt.zero_grad()
                         combined_batch = torch.cat((mem_x, batch_x))
                         combined_labels = torch.cat((mem_y, batch_y))
+                        if self.params.aug:
+                            combined_batch = self.transform(combined_batch)
                         combined_logits = self.model.forward(combined_batch)
                         loss_combined = self.criterion(combined_logits, combined_labels)
                         loss_combined.backward()
