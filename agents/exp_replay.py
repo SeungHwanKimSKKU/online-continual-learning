@@ -60,9 +60,9 @@ class ExperienceReplay(ContinualLearner):
 
                     # mem update
                     mem_x_original, mem_y_original = self.buffer.retrieve(x=batch_x_original, y=batch_y)
-                    if mem_x.size(0) > 0:
-                        mem_x = maybe_cuda(mem_x, self.cuda)
-                        mem_y = torch.cat((maybe_cuda(mem_y, self.cuda), maybe_cuda(mem_y, self.cuda)))
+                    if mem_x_original.size(0) > 0:
+                        mem_x = maybe_cuda(mem_x_original, self.cuda)
+                        mem_y = torch.cat((maybe_cuda(mem_y_original, self.cuda), maybe_cuda(mem_y_original, self.cuda)))
                         if self.params.aug:
                             mem_x = torch.cat((self.transform(mem_x), mem_x))
                         mem_logits = self.model.forward(mem_x)
