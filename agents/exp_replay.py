@@ -35,6 +35,7 @@ class ExperienceReplay(ContinualLearner):
                 # batch update
                 batch_x, batch_y = batch_data
                 batch_x_original = maybe_cuda(batch_x, self.cuda)
+                batch_y_original = maybe_cuda(batch_y, self.cuda)
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = torch.cat((maybe_cuda(batch_y, self.cuda), maybe_cuda(batch_y, self.cuda)))
                 for j in range(self.mem_iters):
@@ -97,7 +98,7 @@ class ExperienceReplay(ContinualLearner):
                         self.opt.step()
 
                 # update mem
-                self.buffer.update(batch_x_original, batch_y)
+                self.buffer.update(batch_x_original, batch_y_original)
 
                 if i % 100 == 1 and self.verbose:
                     print(
