@@ -59,7 +59,7 @@ class ExperienceReplay(ContinualLearner):
                     loss.backward()
 
                     # mem update
-                    mem_x, mem_y = self.buffer.retrieve(x=batch_x_original, y=batch_y)
+                    mem_x_original, mem_y_original = self.buffer.retrieve(x=batch_x_original, y=batch_y)
                     if mem_x.size(0) > 0:
                         mem_x = maybe_cuda(mem_x, self.cuda)
                         mem_y = torch.cat((maybe_cuda(mem_y, self.cuda), maybe_cuda(mem_y, self.cuda)))
@@ -85,8 +85,8 @@ class ExperienceReplay(ContinualLearner):
                     if self.params.update == 'ASER' or self.params.retrieve == 'ASER' or self.params.combine_mem_training:
                         # opt update
                         self.opt.zero_grad()
-                        combined_batch = torch.cat((mem_x, batch_x))
-                        combined_labels = torch.cat((mem_y, batch_y))
+                        combined_batch = torch.cat((mem_x_original, batch_x_original))
+                        combined_labels = torch.cat((mem_y_original, batch_y_original))
                         combined_labels = torch.cat((maybe_cuda(combined_labels, self.cuda), maybe_cuda(combined_labels, self.cuda)))
                         if self.params.aug:
                             combined_batch = torch.cat((self.transform(combined_batch), combined_batch))
