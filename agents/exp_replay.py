@@ -59,7 +59,7 @@ class ExperienceReplay(ContinualLearner):
 
                     # mem update
                     mem_x_original, mem_y_original = self.buffer.retrieve(x=batch_x_original, y=batch_y)
-                    if mem_x.size(0) > 0:
+                    if mem_x_original.size(0) > 0:
                         mem_x = maybe_cuda(mem_x_original, self.cuda)
                         mem_y = maybe_cuda(mem_y_original, self.cuda)
                         if self.params.aug:
