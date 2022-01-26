@@ -81,7 +81,7 @@ class ExperienceReplay(ContinualLearner):
 
                         loss_mem.backward()
 
-                    if self.params.update == 'ASER' or self.params.retrieve == 'ASER':
+                    if self.params.update == 'ASER' or self.params.retrieve == 'ASER' or self.params.combine_mem_training:
                         # opt update
                         self.opt.zero_grad()
                         combined_batch = torch.cat((mem_x, batch_x))
