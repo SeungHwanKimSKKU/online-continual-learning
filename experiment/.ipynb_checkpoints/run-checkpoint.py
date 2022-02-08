@@ -39,7 +39,7 @@ def multiple_run(params, store=False, save_path=None):
         model = maybe_cuda(model, params.cuda)
         opt = setup_opt(params.optimizer, model, params.learning_rate, params.weight_decay)
         agent = agents[params.agent](model, opt, params)
-        
+
         # prepare val data loader
         test_loaders = setup_test_loader(data_continuum.test_data(), params)
         if params.online:
